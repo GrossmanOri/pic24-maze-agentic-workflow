@@ -1,0 +1,9 @@
+# MPLAB X build artifacts
+build/
+debug/
+dist/
+nbproject/private/
+nbproject/Makefile-*
+*.mk
+.generated_files/
+.DS_Store
