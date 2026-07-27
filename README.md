@@ -3,6 +3,9 @@
 A ball-in-maze game for the **PIC24FJ256GA705 Curiosity** board. Tilt the board
 to roll a ball (read with the **ADXL345** accelerometer) from START to FINISH of
 a 96x96 maze on the **OLED**, within a time limit set by the chosen difficulty.
+Dots are scattered through the corridors to collect on the way, a 3-2-1
+countdown opens every round, and beating the best time earns a NEW RECORD
+screen.
 
 Built on the course **accelerometer-lab template** (System / oledDriver /
 spiDriver / i2cDriver), as required, so it compiles unchanged with XC16.
@@ -31,6 +34,21 @@ spiDriver / i2cDriver), as required, so it compiles unchanged with XC16.
 | Hold S1 (2 s) | abort game, back to the main menu |
 
 See `OPERATING_INSTRUCTIONS.txt` for full gameplay.
+
+---
+
+## Screens
+
+Simulated frames, rendered pixel-exact from the game's own drawing code and
+font:
+
+| Menu | Countdown | Gameplay |
+|---|---|---|
+| ![menu](docs/screen_menu.png) | ![countdown](docs/screen_countdown.png) | ![gameplay](docs/screen_play.png) |
+
+| Win | Score | Big Three |
+|---|---|---|
+| ![win](docs/screen_win.png) | ![score](docs/screen_score.png) | ![scores](docs/screen_scores.png) |
 
 ---
 
@@ -84,6 +102,11 @@ See `OPERATING_INSTRUCTIONS.txt` for full gameplay.
 * **Win/Lose screens, score, name entry, Big Three**: `run_result()`,
   `run_name_entry()`, `scoreboard.c`.
 
+Beyond the brief: fresh maze every game (the brief suggests one fixed maze),
+per-difficulty maze density, collectible corridor dots (score stays the game
+time, as specified - the win screen just reports the dot count), a 3-2-1
+countdown, a win animation, and NEW RECORD detection.
+
 ## Maze generation
 
 <img src="docs/sim_maze.png" width="288" align="right" alt="A level-2 maze rendered from the generator: white walls, ball at the bottom start, red finish room in the center">
@@ -132,3 +155,6 @@ keyboard:
 * **Closed-loop hardware verification.** Photos of the OLED went back into
   the loop after each flash, so every fix was confirmed on the actual panel,
   not just in theory.
+* **Pixel-exact screen simulator.** A small Python tool renders every screen
+  from the same drawing calls and the panel font, so UI changes could be
+  reviewed as images (the frames above) before touching the hardware.
