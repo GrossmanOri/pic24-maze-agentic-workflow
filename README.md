@@ -7,6 +7,10 @@ a 96x96 maze on the **OLED**, within a time limit set by the chosen difficulty.
 Built on the course **accelerometer-lab template** (System / oledDriver /
 spiDriver / i2cDriver), as required, so it compiles unchanged with XC16.
 
+<p align="center">
+  <img src="docs/hardware.jpg" width="420" alt="The game running on the Curiosity board: OLED C Click showing the maze, Accel Click beside it">
+</p>
+
 ---
 
 ## Build & run
@@ -81,6 +85,8 @@ See `OPERATING_INSTRUCTIONS.txt` for full gameplay.
   `run_name_entry()`, `scoreboard.c`.
 
 ## Maze generation
+
+<img src="docs/sim_maze.png" width="288" align="right" alt="A level-2 maze rendered from the generator: white walls, ball at the bottom start, red finish room in the center">
 
 Each game carves a fresh maze with an iterative recursive-backtracker over a
 logical grid (8x8, 10x10 or 12x12 cells depending on difficulty; the seed
