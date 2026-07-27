@@ -95,3 +95,34 @@ project brief. START is the bottom-center cell (green marker); FINISH is a
 Everything playable is in `game_config.h`: ball feel via `TILT_VEL_DEN`
 (higher = calmer), `TILT_DEADZONE` and `BALL_MAX_STEP`; tilt-to-screen axis
 mapping via `ACCEL_X_SIGN` / `ACCEL_Y_SIGN`.
+
+## AI-assisted engineering workflow
+
+Beyond the firmware itself, this project was an exercise in using AI agents
+as engineering tools. I built the workflow around
+[Claude Code](https://claude.com/claude-code) and split the work across
+multiple agents, each with a job where an agent actually beats a human at the
+keyboard:
+
+* **Hardware debugging agent.** Drove the board's PKOB debugger headlessly
+  (MPLAB's `mdb` scripted from the CLI): breakpoint sessions that dumped
+  `I2C1STAT` at each phase of an I2C transaction. That traced a real timing
+  bug in the course template driver: its TRSTAT polling let queued bytes be
+  silently dropped (IWCOL), so register writes never reached the ADXL345 and
+  it never entered measure mode. When the debugger's own halts masked the
+  race, the agent switched tactics and captured full-speed `I2C1STAT` traces
+  into RAM instead, then read them out after the fact.
+* **Host-side test harness.** The game logic (`maze.c`, `ball.c`,
+  `scoreboard.c`) was compiled natively against the *real* OLED driver code
+  with only the hardware boundary mocked, and fuzzed: every generated maze
+  proven solvable by the actual ball footprint, pixel by pixel. Compiling the
+  real driver instead of an idealized mock is what exposed a template bug
+  where vertical walls were never drawn.
+* **Adversarial review agents.** Two independent agents on different models
+  reviewed the final code and docs cold, hunting comment-vs-code mismatches
+  and layout math errors. They caught real bugs: hint strings that clipped at
+  the 96 px panel edge, a stale button edge that leaked from name entry into
+  the menu, and a cursor underline one pixel short.
+* **Closed-loop hardware verification.** Photos of the OLED went back into
+  the loop after each flash, so every fix was confirmed on the actual panel,
+  not just in theory.
