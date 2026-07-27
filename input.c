@@ -49,14 +49,12 @@ void input_init(void)
     IOCPUAbits.IOCPUA11 = 1; /* enable weak pull-up on RA11 */
     IOCPUAbits.IOCPUA12 = 1; /* enable weak pull-up on RA12 */
 
-    /* --- Potentiometer on pin RB12 (ADC channel AN8) ---
-     * Enable the board's analog pins exactly as the working channel-finder
-     * test did (RA0-3 and RB2/3/9/12), so the pot pin is guaranteed analog. */
-    ANSA = 0x000F;
+    /* --- Potentiometer on pin RB12 (ADC channel AN8) --- */
+    ANSA = 0x000F;   /* unused RA0-RA3 left analog (their reset default) */
     ANSB = 0x100C;   /* RB2,RB3,RB12 analog; leave RB9 DIGITAL (it is I2C1 SDA) */
     TRISBbits.TRISB12 = 1;
 
-    /* --- 10-bit ADC, manual sample, channel AN8 (verified on hardware) --- */
+    /* --- 10-bit ADC, manual sampling, channel AN8 --- */
     AD1CON1 = 0x0000;
     AD1CON2 = 0x0000;
     AD1CON3 = 0x0000;
@@ -89,8 +87,6 @@ void input_poll(uint32_t now_ms)
     s1_prev_down = s1.stable;
 }
 
-bool input_s1_down(void)   { return s1.stable; }
-bool input_s2_down(void)   { return s2.stable; }
 bool input_both_down(void) { return s1.stable && s2.stable; }
 
 bool input_s1_pressed(void) { bool e = s1.edge; s1.edge = false; return e; }
@@ -98,7 +94,7 @@ bool input_s2_pressed(void) { bool e = s2.edge; s2.edge = false; return e; }
 
 bool input_s1_long_press(void) { bool e = s1_long_event; s1_long_event = false; return e; }
 
-uint16_t input_pot_raw(void)
+static uint16_t input_pot_raw(void)
 {
     uint16_t guard = 0;
     AD1CON1bits.SAMP = 1;                 /* start sampling      */

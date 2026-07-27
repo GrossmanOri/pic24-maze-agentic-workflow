@@ -6,8 +6,8 @@
  * accelerometer) from START to FINISH of a 96x96 maze on the OLED, within a
  * time limit set by the chosen difficulty.
  *
- * All values a grader / player might want to tweak (timing, ball feel, maze
- * geometry, colors) live here so the rest of the code stays declarative.
+ * All tuning values (timing, ball feel, maze geometry, colors) are collected
+ * here so they can be changed in one place.
  ******************************************************************************/
 #ifndef GAME_CONFIG_H
 #define GAME_CONFIG_H
@@ -19,17 +19,21 @@
 #define SCREEN_H            96
 
 /* ---- Maze grid --------------------------------------------------------- */
-/* 8x8 logical cells over the 96x96 panel. Walls sit on cell boundaries and
- * are drawn 1 pixel wide. Cell pitch = 12 px. */
-#define MAZE_COLS           12
-#define MAZE_ROWS           12
-#define CELL_PX             8       /* nominal cell pitch in pixels          */
+/* The grid size is chosen per difficulty at run time (see GRID_LVL*). Walls
+ * sit on cell boundaries and are drawn 1 pixel wide. The arrays are sized to
+ * the largest grid; MAZE_COLS/ROWS are the MAX. */
+#define MAZE_COLS           12      /* max columns (array bound) */
+#define MAZE_ROWS           12      /* max rows    (array bound) */
 
-/* START cell (top-left) and FINISH cell (bottom-right). */
-#define START_COL           0
-#define START_ROW           0
-#define FINISH_COL          (MAZE_COLS - 1)
-#define FINISH_ROW          (MAZE_ROWS - 1)
+/* Per-difficulty grid: bigger grid = smaller cells = denser, harder maze.
+ * Levels 1 and 3 divide 96 evenly; level 2 leaves its last row/column a bit
+ * wider (xline() clamps the outer edge to the panel). */
+#define GRID_LVL1           8       /* 12 px cells - easy   */
+#define GRID_LVL2           10      /* ~9 px cells - medium */
+#define GRID_LVL3           12      /* 8 px cells  - hard   */
+
+/* Layout (computed at run time in maze.c from the active grid): START is the
+ * BOTTOM-center cell, FINISH is a 2x2 room in the CENTER. */
 
 /* ---- Ball -------------------------------------------------------------- */
 #define BALL_RADIUS         2       /* filled circle radius in pixels        */
@@ -42,14 +46,15 @@
  *
  *   velocity[1/16 px per frame] = tilt_counts * speed_pct / TILT_VEL_DEN
  *
- * With TILT_VEL_DEN = 400 a full sideways g (256) at 100% gives 4 px/frame.
+ * With TILT_VEL_DEN = 400 a full sideways g (256) at 100% gives about
+ * 4 px/frame (before the dead-zone), and BALL_MAX_STEP clamps it to 3.
  *
  * ACCEL_*_SIGN map the chip axes to screen axes (screen +x = right, +y =
- * down). Flip these on real hardware if the ball rolls the wrong way. */
+ * down), matching how the Accel Click is mounted on this board. */
 #define TILT_DEADZONE       12      /* ignore small tilts (counts)           */
 #define SUBPIXEL            16       /* fractional position resolution        */
 #define TILT_VEL_DEN        400      /* velocity scaling denominator          */
-#define ACCEL_X_SIGN        (+1)     /* screen vx = ACCEL_X_SIGN * accel_x    */
+#define ACCEL_X_SIGN        (-1)     /* screen vx = ACCEL_X_SIGN * accel_x    */
 #define ACCEL_Y_SIGN        (+1)     /* screen vy = ACCEL_Y_SIGN * accel_y    */
 
 /* Per-difficulty speed factor expressed as a percentage (avoids floats):
@@ -65,24 +70,23 @@
 
 /* ---- Timing ------------------------------------------------------------ */
 #define TICK_MS             10      /* Timer1 ISR period (ms)                */
-#define TICKS_PER_TENTH     10      /* 10 * 10ms = 100ms = 0.1 s             */
 #define HURRY_UP_TENTHS     50      /* last 5.0 s -> blink the screen        */
-#define BLINK_TOGGLE_MS     250     /* invert every 250ms => 2 swaps/second  */
+#define BLINK_TOGGLE_MS     500     /* invert every 500ms => 2 swaps/second  */
 #define LONGPRESS_MS        2000    /* hold S1 2 s to abort to the menu      */
 
 /* ---- High scores ------------------------------------------------------- */
 #define NUM_HIGHSCORES      3       /* the "big three"                       */
 #define NAME_MAXLEN         12      /* up to 12 characters per name          */
 
-/* ---- Colors (RGB565, from oledC_colors.h naming) ----------------------- */
-#define COL_BG              0x0000  /* black background                      */
-#define COL_WALL            0xFFFF  /* white walls                           */
-#define COL_BALL            0xF800  /* red ball                              */
-#define COL_START           0x07E0  /* green start marker                    */
-#define COL_FINISH          0xFFE0  /* yellow finish marker                  */
-#define COL_TEXT            0xFFFF  /* white text                            */
-#define COL_TIMER           0x07FF  /* cyan timer                            */
-#define COL_HILITE          0xFC00  /* orange menu highlight                 */
+/* ---- Colors (RGB565) --------------------------------------------------- */
+#define COL_BG              0x0000  /* screen background                     */
+#define COL_WALL            0xFFFF  /* maze walls                            */
+#define COL_BALL            0xF800  /* the ball                              */
+#define COL_START           0x07E0  /* start marker                          */
+#define COL_FINISH          0xFFE0  /* finish marker                         */
+#define COL_TEXT            0xFFFF  /* regular text                          */
+#define COL_DIM             0x07FF  /* secondary text (timer, hints)         */
+#define COL_HILITE          0xFC00  /* menu selection / accents              */
 
 /* Difficulty record. */
 typedef struct {

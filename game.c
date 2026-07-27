@@ -1,12 +1,11 @@
 /*******************************************************************************
  * game.c - Maze game controller: menu, gameplay, timer, win/lose, scoring and
- * name entry. Implements the full flow described in the project brief.
+ * name entry.
  *
  * The whole game is a state machine driven from game_run(). The OLED is only
  * ever touched here (and in the modules called from here) in the main context,
  * so there is no contention with the Timer1 tick ISR.
  ******************************************************************************/
-#include <xc.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -27,7 +26,7 @@
 /* Maze seed varies with difficulty and replay count, so every game is a
  * different (still fair, solvable) maze - and each difficulty looks distinct. */
 #define MAZE_SEED_BASE  0x00C0FFEEu
-#define FRAME_MS        30          /* ~33 fps gameplay */
+#define FRAME_MS        30          /* per-frame delay, plus draw time */
 
 static uint32_t g_play_count = 0;
 
@@ -49,9 +48,7 @@ static void ui_clear(void)
 
 static void display_normal(void)
 {
-    /* 0xA6 = display ON / normal (show RAM). NOTE: 0xA4 ("OFF_BLACK") turns the
-     * panel black on this hardware - using it here is what blacked the screen
-     * after the hurry-up blink. */
+    /* 0xA6 = normal display. (0xA4 blanks the panel - don't use it here.) */
     oledC_sendCommand(OLEDC_CMD_SET_DISPLAY_MODE_ON, 0, 0);
 }
 static void display_inverse(void)
@@ -70,19 +67,15 @@ static void draw_centered(uint8_t y, uint8_t sx, uint8_t sy,
     oledC_DrawString((uint8_t)x, y, sx, sy, (uint8_t *)s, color);
 }
 
-/* Wait for any button press, OR auto-return after a timeout so a result
- * screen can never get stuck if a press is missed. */
+/* Wait until either button is pressed. */
 static void wait_any_key(void)
 {
-    uint32_t start = tick_ms();
     /* swallow stale edges */
-    input_poll(start);
+    input_poll(tick_ms());
     (void)input_s1_pressed(); (void)input_s2_pressed();
     for (;;) {
-        uint32_t now = tick_ms();
-        input_poll(now);
+        input_poll(tick_ms());
         if (input_s1_pressed() || input_s2_pressed()) return;
-        if (now - start > 8000u) return;     /* auto-continue after 8 s */
         DELAY_milliseconds(10);
     }
 }
@@ -115,7 +108,7 @@ static MenuAction run_menu(void)
             if (sel == 0) {                       /* cycle difficulty 1->2->3 */
                 difficulty = (uint8_t)((difficulty % 3) + 1);
                 menu_draw(sel);
-                DELAY_milliseconds(150);          /* simple debounce gap */
+                DELAY_milliseconds(150);   /* so one press can't cycle twice */
             } else if (sel == 1) {
                 return ACT_START;
             } else {
@@ -135,14 +128,15 @@ static void run_highscores(void)
     draw_centered(2, 1, 2, "BIG THREE", COL_TEXT);
     for (i = 0; i < NUM_HIGHSCORES; i++) {
         uint16_t s = scoreboard_score(i);
+        /* names show truncated to 8 chars so the line fits the 96px panel */
         if (s >= 9999)
-            sprintf(buf, "%d.%-7s --", i + 1, scoreboard_name(i));
+            sprintf(buf, "%d %-8.8s --", i + 1, scoreboard_name(i));
         else
-            sprintf(buf, "%d.%-7s %u.%u", i + 1, scoreboard_name(i),
+            sprintf(buf, "%d %-8.8s %u.%u", i + 1, scoreboard_name(i),
                     s / 10, s % 10);
         oledC_DrawString(2, (uint8_t)(28 + i * 18), 1, 2, (uint8_t *)buf, COL_TEXT);
     }
-    draw_centered(86, 1, 1, "press a key", COL_TIMER);
+    draw_centered(86, 1, 1, "press a key", COL_DIM);
     wait_any_key();
 }
 
@@ -153,9 +147,11 @@ static void draw_timer(uint16_t tenths, int16_t *last)
     if ((int16_t)tenths == *last) return;
     *last = (int16_t)tenths;
     sprintf(buf, "%u.%u", tenths / 10, tenths % 10);
-    /* small background pad so old digits are covered */
+    /* small background pad so old digits are covered; then restore the wall
+     * pixels the pad erased, and draw the digits on top */
     oledC_DrawRectangle(0, 0, 30, 16, COL_BG);
-    oledC_DrawString(0, 0, 1, 2, (uint8_t *)buf, COL_TIMER);
+    maze_redraw_region(0, 0, 30, 16);
+    oledC_DrawString(0, 0, 1, 2, (uint8_t *)buf, COL_DIM);
 }
 
 /* ===================== Gameplay ======================================== */
@@ -170,9 +166,16 @@ static PlayResult run_play(uint16_t *score_out)
     int16_t  last_shown = -1;
     bool inverted = false;
 
-    /* Build and draw the maze (new layout per difficulty and per replay). */
-    g_play_count++;
-    maze_generate(MAZE_SEED_BASE + difficulty * 0x9E3779B1u + g_play_count * 0x85EBCA77u);
+    /* Build and draw the maze. Grid size grows with difficulty (denser/harder),
+     * and the seed varies per difficulty and per replay (different every game). */
+    {
+        int grid = (difficulty == 1) ? GRID_LVL1 :
+                   (difficulty == 2) ? GRID_LVL2 : GRID_LVL3;
+        g_play_count++;
+        /* big odd multipliers just keep the seeds far apart */
+        maze_generate(MAZE_SEED_BASE + difficulty * 130003u +
+                      g_play_count * 49999u, grid, grid);
+    }
     maze_render();
     maze_start_pixel(&sx, &sy);
     ball_reset(sx, sy);
@@ -187,9 +190,10 @@ static PlayResult run_play(uint16_t *score_out)
         now = tick_ms();
         input_poll(now);
 
-        /* Long press S1 (2s) aborts the game back to the menu. */
+        /* Long press S1 (2s) aborts the game back to the menu. Every exit
+         * path restores the normal display in case the blink left it inverted. */
         if (input_s1_long_press()) {
-            display_normal();  /* always restore normal on exit */
+            display_normal();
             return PLAY_ABORT;
         }
 
@@ -197,8 +201,7 @@ static PlayResult run_play(uint16_t *score_out)
         {
             uint32_t elapsed_tenths = (now - start_ms) / 100u;
             if (elapsed_tenths >= d->time_tenths) {
-                display_normal();  /* always restore normal on exit */
-                *score_out = d->time_tenths;
+                display_normal();
                 return PLAY_LOSE;
             }
             remaining = (uint16_t)(d->time_tenths - elapsed_tenths);
@@ -210,21 +213,12 @@ static PlayResult run_play(uint16_t *score_out)
         ball_render();
         draw_timer(remaining, &last_shown);
 
-        /* TEMP DIAGNOSTIC: raw tilt X,Y and POWER_CTL read-back (P).
-         * P should read 8 once measure mode is engaged. */
-        {
-            char tb[20];
-            sprintf(tb, "T%d %d P%u", tx, ty, (unsigned)g_accel_powerctl);
-            oledC_DrawRectangle(0, 88, 95, 95, COL_BG);
-            oledC_DrawString(0, 88, 1, 1, (uint8_t *)tb, COL_HILITE);
-        }
-
         /* Keep the ball drawn on top (so the corner timer can't hide it). */
         oledC_DrawCircle((uint8_t)ball_x(), (uint8_t)ball_y(), BALL_RADIUS, COL_BALL);
 
         /* Finish reached? */
         if (maze_at_finish(ball_x(), ball_y())) {
-            display_normal();  /* always restore normal on exit */
+            display_normal();
             *score_out = (uint16_t)((now - start_ms) / 100u);
             return PLAY_WIN;
         }
@@ -249,6 +243,8 @@ static void run_name_entry(uint16_t score)
 {
     char name[NAME_MAXLEN + 1];
     int cur = 0, maxpos = 0, i;
+    int last_cur = -1, last_maxpos = -1;
+    char last_letter = 0;
 
     for (i = 0; i <= NAME_MAXLEN; i++) name[i] = 0;
     for (i = 0; i < NAME_MAXLEN; i++) name[i] = 'A';
@@ -256,8 +252,13 @@ static void run_name_entry(uint16_t score)
     input_poll(tick_ms());
     (void)input_s1_pressed(); (void)input_s2_pressed();
 
+    /* Static parts are drawn once; the loop below repaints only the name
+     * line and the cursor, and only when they actually change. */
+    ui_clear();
+    draw_centered(4, 1, 2, "YOUR NAME", COL_TEXT);
+    draw_centered(82, 1, 1, "S1< S2> S1+S2=ok", COL_DIM);
+
     for (;;) {
-        char disp[NAME_MAXLEN + 2];
         input_poll(tick_ms());
 
         /* Current letter chosen by the potentiometer. */
@@ -267,8 +268,10 @@ static void run_name_entry(uint16_t score)
         if (input_both_down()) {
             name[maxpos + 1] = '\0';
             scoreboard_insert(name, score);
-            /* wait for release so it isn't seen by the menu */
+            /* wait for release, then drop the leftover press edges so the
+             * menu doesn't act on them */
             while (input_both_down()) { input_poll(tick_ms()); DELAY_milliseconds(10); }
+            (void)input_s1_pressed(); (void)input_s2_pressed();
             return;
         }
 
@@ -279,21 +282,28 @@ static void run_name_entry(uint16_t score)
             if (cur < NAME_MAXLEN - 1) { cur++; if (cur > maxpos) maxpos = cur; }
         }
 
-        /* Render. */
-        ui_clear();
-        draw_centered(4, 1, 2, "YOUR NAME", COL_TEXT);
-        for (i = 0; i <= maxpos; i++) disp[i] = name[i];
-        disp[maxpos + 1] = '\0';
-        draw_centered(38, 2, 2, disp, COL_TEXT);
-        /* cursor underline at current position */
-        {
-            int w = (maxpos + 1) * (5 * 2 + 1) - 1;
+        /* Repaint only when the visible state changed. Text scale is 1 so
+         * all NAME_MAXLEN characters fit on the 96px panel (6 px each). */
+        if (name[cur] != last_letter || cur != last_cur || maxpos != last_maxpos) {
+            char disp[NAME_MAXLEN + 2];
+            int w  = (maxpos + 1) * 6 - 1;
             int x0 = (SCREEN_W - w) / 2;
-            int cxs = x0 + cur * (5 * 2 + 1);
-            oledC_DrawLine((uint8_t)cxs, 70, (uint8_t)(cxs + 10), 70, 1, COL_HILITE);
+
+            last_letter = name[cur];
+            last_cur = cur; last_maxpos = maxpos;
+
+            for (i = 0; i <= maxpos; i++) disp[i] = name[i];
+            disp[maxpos + 1] = '\0';
+
+            oledC_DrawRectangle(0, 38, SCREEN_W - 1, 62, COL_BG);
+            draw_centered(40, 1, 2, disp, COL_TEXT);
+            /* cursor underline at the current position */
+            {
+                int cxs = x0 + cur * 6;
+                oledC_DrawLine((uint8_t)cxs, 58, (uint8_t)(cxs + 5), 58, 1, COL_HILITE);
+            }
         }
-        draw_centered(82, 1, 1, "S1<  S2>  S1+S2 ok", COL_TIMER);
-        DELAY_milliseconds(60);
+        DELAY_milliseconds(30);
     }
 }
 
@@ -303,30 +313,30 @@ static void run_result(PlayResult r, uint16_t score)
 
     if (r == PLAY_LOSE) {
         ui_clear();
-        draw_centered(20, 2, 2, "TIME!", COL_FINISH);
-        draw_centered(46, 1, 2, "Next time...", COL_TEXT);
-        draw_centered(80, 1, 1, "press a key", COL_TIMER);
+        draw_centered(24, 2, 2, "TIME UP", COL_TEXT);
+        draw_centered(50, 1, 2, "Next time...", COL_TEXT);
+        draw_centered(82, 1, 1, "press a key", COL_DIM);
         wait_any_key();
         return;
     }
 
     /* WIN */
     ui_clear();
-    draw_centered(30, 2, 2, "WELL", COL_START);
-    draw_centered(54, 2, 2, "DONE!", COL_START);
+    draw_centered(30, 2, 2, "WELL", COL_TEXT);
+    draw_centered(54, 2, 2, "DONE!", COL_TEXT);
     wait_any_key();
 
     ui_clear();
     draw_centered(20, 1, 2, "YOUR SCORE", COL_TEXT);
     sprintf(buf, "%u.%u", score / 10, score % 10);
-    draw_centered(44, 2, 2, buf, COL_TIMER);
+    draw_centered(44, 2, 2, buf, COL_HILITE);
 
     if (scoreboard_qualifies(score)) {
-        draw_centered(72, 1, 1, "TOP 3! press key", COL_HILITE);
+        draw_centered(72, 1, 1, "TOP 3! press key", COL_DIM);
         wait_any_key();
         run_name_entry(score);
     } else {
-        draw_centered(72, 1, 1, "press a key", COL_TIMER);
+        draw_centered(72, 1, 1, "press a key", COL_DIM);
         wait_any_key();
     }
 }
@@ -339,8 +349,8 @@ void game_init(void)
     scoreboard_init();
     input_init();
     tick_init();
-    /* Note: the accelerometer is initialized lazily on the first START so a
-     * flaky Accel Click can never hang/black the boot menu. */
+    /* The accelerometer is initialized on the first START rather than at
+     * boot, so a bad I2C connection doesn't stop the menu from showing. */
     ui_clear();
 }
 
@@ -360,7 +370,7 @@ void game_run(void)
             if (!accel_ready) {
                 ui_clear();
                 draw_centered(28, 2, 2, "I2C ERR", COL_BALL);
-                draw_centered(54, 1, 1, "check Accel Click", COL_TEXT);
+                draw_centered(54, 1, 1, "Accel not found", COL_TEXT);
                 wait_any_key();
                 continue;           /* back to menu, no hang */
             }

@@ -60,9 +60,10 @@ void ball_update(int tx, int ty, uint8_t speed_pct)
     tx = deadzone(tx) * ACCEL_X_SIGN;
     ty = deadzone(ty) * ACCEL_Y_SIGN;
 
-    /* velocity in 1/SUBPIXEL pixels per frame */
-    vx16 = clampi(tx * (int)speed_pct / TILT_VEL_DEN, -maxv, maxv);
-    vy16 = clampi(ty * (int)speed_pct / TILT_VEL_DEN, -maxv, maxv);
+    /* velocity in 1/SUBPIXEL pixels per frame (32-bit product: tilt can reach
+     * ~512 counts, and 512*120 overflows the 16-bit int of the PIC24) */
+    vx16 = clampi((int)((int32_t)tx * speed_pct / TILT_VEL_DEN), -maxv, maxv);
+    vy16 = clampi((int)((int32_t)ty * speed_pct / TILT_VEL_DEN), -maxv, maxv);
 
     subx += vx16;
     suby += vy16;
@@ -79,7 +80,8 @@ void ball_render(void)
     if (cx == prev_x && cy == prev_y)
         return;                         /* nothing moved -> no repaint */
 
-    /* Erase old ball in background color (project guidance #5). */
+    /* Erase the ball at its old position by repainting it in the background
+     * color, then draw it at the new one. */
     oledC_DrawCircle((uint8_t)prev_x, (uint8_t)prev_y, BALL_RADIUS, COL_BG);
     /* Restore markers the erase may have clipped. */
     maze_draw_markers();

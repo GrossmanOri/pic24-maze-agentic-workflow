@@ -5,9 +5,9 @@
 
 GOAL
 ----
-Tilt the board to roll the red ball from the green START (top-left) to the
-yellow FINISH (bottom-right) of the maze before the timer runs out. Finishing
-faster gives a better (lower) score.
+Tilt the board to roll the ball from START (the green marker at the bottom of
+the maze) to FINISH (the marked room in the center) before the timer runs
+out. Finishing faster gives a better (lower) score.
 
 HARDWARE SETUP
 --------------
@@ -15,6 +15,8 @@ HARDWARE SETUP
   * Accel Click   -> mikroBUS socket B (right).
   * Connect the board over USB and program it (MPLAB X -> Make and Program).
   * Hold the board flat to start; the ball is still when the board is level.
+  * If an "I2C ERR" screen appears when starting a game, re-seat the Accel
+    Click board and press a key to try again.
 
 CONTROLS
 --------
@@ -26,15 +28,15 @@ CONTROLS
 
 MAIN MENU (shown at power-up)
 -----------------------------
-Turn the potentiometer to highlight an option (shown in orange), then press
-S1 or S2 to choose it:
+Turn the potentiometer to highlight an option, then press S1 or S2 to
+choose it:
 
   DIFF n   - press to cycle the difficulty 1 -> 2 -> 3:
                  Level 1 : 40.0 s, slow ball  (speed factor 0.8)
                  Level 2 : 30.0 s, normal     (speed factor 1.0)
                  Level 3 : 20.0 s, fast ball  (speed factor 1.2)
   START    - begin a game at the chosen difficulty.
-  SCORES   - show the "Big Three" best times.
+  SCORES   - show the "Big Three" best times (kept until power-off).
 
 PLAYING
 -------
@@ -61,6 +63,4 @@ TIPS
 ----
   * Small, gentle tilts give fine control; large tilts are fast but easy to
     overshoot. Start on Level 1 to learn the maze.
-  * If the ball rolls the "wrong way" for your board orientation, see the
-    README (ACCEL_X_SIGN / ACCEL_Y_SIGN in game_config.h).
 ================================================================================

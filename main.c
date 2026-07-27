@@ -3,7 +3,7 @@
  *
  * Final project: tilt the board to roll a ball through a 96x96 maze from START
  * to FINISH before time runs out. Built on the accelerometer-lab template
- * (System / oledDriver / spiDriver / i2cDriver) as required.
+ * (System / oledDriver / spiDriver / i2cDriver).
  *
  *   SYSTEM_Initialize()  - clock, pins, OLED (SPI1) from the template
  *   game_init()          - input (pot + S1/S2), Timer1 tick, accelerometer

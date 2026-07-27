@@ -3,15 +3,13 @@
  *
  * The ball is a filled circle. Tilt (from the accelerometer) accelerates it;
  * walls and window bounds stop it. Motion is per-axis so axis-aligned maze
- * corridors behave naturally. Rendering follows the project guidance: erase
- * the ball at its old spot in the background color, then draw it at the new
- * spot.
+ * corridors behave naturally. Rendering erases the ball at its old spot in
+ * the background color, then draws it at the new spot.
  ******************************************************************************/
 #ifndef BALL_H
 #define BALL_H
 
 #include <stdint.h>
-#include <stdbool.h>
 
 /* Place the ball at pixel (x,y) and clear its motion state. */
 void ball_reset(int x, int y);
