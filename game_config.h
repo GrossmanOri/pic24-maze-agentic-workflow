@@ -78,6 +78,16 @@
 #define NUM_HIGHSCORES      3       /* the "big three"                       */
 #define NAME_MAXLEN         12      /* up to 12 characters per name          */
 
+/* ---- Collectible dots ---------------------------------------------------
+ * One dot per corridor cell (skipping the start cell, the finish room and
+ * the timer corner). Purely for fun - the score stays the game time, as the
+ * brief defines. */
+#define DOT_KEEPOUT_X       34      /* no dots under the timer pad...        */
+#define DOT_KEEPOUT_Y       20      /* ...(cell centers left of/above this)  */
+
+/* ---- Countdown --------------------------------------------------------- */
+#define COUNTDOWN_STEP_MS   650     /* per digit of the 3-2-1 countdown      */
+
 /* ---- Colors (RGB565) --------------------------------------------------- */
 #define COL_BG              0x0000  /* screen background                     */
 #define COL_WALL            0xFFFF  /* maze walls                            */
@@ -87,6 +97,7 @@
 #define COL_TEXT            0xFFFF  /* regular text                          */
 #define COL_DIM             0x07FF  /* secondary text (timer, hints)         */
 #define COL_HILITE          0xFC00  /* menu selection / accents              */
+#define COL_DOT             0x07FF  /* collectible dots                      */
 
 /* Difficulty record. */
 typedef struct {

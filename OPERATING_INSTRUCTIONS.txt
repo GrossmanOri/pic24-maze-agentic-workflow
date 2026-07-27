@@ -5,9 +5,11 @@
 
 GOAL
 ----
-Tilt the board to roll the ball from START (the green marker at the bottom of
+Tilt the board to roll the ball from START (the green square at the bottom of
 the maze) to FINISH (the marked room in the center) before the timer runs
-out. Finishing faster gives a better (lower) score.
+out. Finishing faster gives a better (lower) score. Dots are scattered along
+the corridors - collect them on the way for bragging rights (the score is
+still the time; the win screen shows how many dots you got).
 
 HARDWARE SETUP
 --------------
@@ -40,6 +42,7 @@ choose it:
 
 PLAYING
 -------
+  * A short 3-2-1 countdown runs before the ball unlocks - level the board.
   * The remaining time is shown top-left in tenths of a second (e.g. 12.3).
   * Tilt the board: the steeper the tilt, the faster the ball rolls. Movement
     is separate for the X and Y axes, matching the maze corridors.
@@ -52,7 +55,8 @@ END OF A GAME
   * TIME RAN OUT: a "Next time..." screen appears. Press any key to return to
     the menu.
   * YOU REACHED THE FINISH: a "WELL DONE!" screen appears. Press any key to see
-    your score (your time, lower is better).
+    your score (your time, lower is better), your dot count, and NEW RECORD!
+    if you beat the best time.
         - If your time makes the Big Three, you are asked to enter your name:
               turn the potentiometer to pick each letter (A..Z),
               S1 / S2 move the cursor left / right,

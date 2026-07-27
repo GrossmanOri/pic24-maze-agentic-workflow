@@ -30,6 +30,10 @@ static int cr1(void)  { return g_rows / 2; }
 #define BMP_STRIDE  ((SCREEN_W + 7) / 8)
 static uint8_t wallbits[SCREEN_H][BMP_STRIDE];
 
+/* ---- Collectible dots (one per eligible cell, at the cell center) ------ */
+static uint8_t dot_alive[MAZE_ROWS][MAZE_COLS];
+static int     dots_left, dots_total;
+
 /* ---- Deterministic PRNG (LCG) ------------------------------------------ */
 static uint32_t rng_state;
 static void     rng_seed(uint32_t s) { rng_state = s ? s : 1u; }
@@ -191,6 +195,85 @@ static int dead_end_count(void)
     return n;
 }
 
+/* ---- Dots --------------------------------------------------------------
+ * A dot goes in the middle of every cell except the start cell, the finish
+ * room and the cells hidden under the timer pad. */
+static void cell_center(int c, int r, int *x, int *y)
+{
+    *x = (xline(c) + xline(c + 1)) / 2;
+    *y = (yline(r) + yline(r + 1)) / 2;
+}
+
+static void place_dots(void)
+{
+    int r, c;
+    dots_left = dots_total = 0;
+    for (r = 0; r < g_rows; r++)
+        for (c = 0; c < g_cols; c++) {
+            int x, y, in_finish;
+            dot_alive[r][c] = 0;
+            if (c == scol() && r == srow()) continue;          /* start   */
+            in_finish = (c >= cc0() && c <= cc1() &&
+                         r >= cr0() && r <= cr1());
+            if (in_finish) continue;                           /* finish  */
+            cell_center(c, r, &x, &y);
+            if (x < DOT_KEEPOUT_X && y < DOT_KEEPOUT_Y) continue; /* timer */
+            dot_alive[r][c] = 1;
+            dots_left++; dots_total++;
+        }
+}
+
+static void draw_dot(int c, int r, uint16_t color)
+{
+    int x, y;
+    cell_center(c, r, &x, &y);
+    oledC_DrawRectangle((uint8_t)(x - 1), (uint8_t)(y - 1),
+                        (uint8_t)x, (uint8_t)y, color);
+}
+
+void maze_dots_render(void)
+{
+    int r, c;
+    for (r = 0; r < g_rows; r++)
+        for (c = 0; c < g_cols; c++)
+            if (dot_alive[r][c])
+                draw_dot(c, r, COL_DOT);
+}
+
+/* Eat the dot in the ball's cell once the ball touches it. */
+bool maze_dot_collect(int bx, int by, int radius)
+{
+    int c = bx / g_cellx, r = by / g_celly, x, y;
+    if (c >= g_cols) c = g_cols - 1;
+    if (r >= g_rows) r = g_rows - 1;
+    if (!dot_alive[r][c]) return false;
+    cell_center(c, r, &x, &y);
+    if (bx - x > radius + 1 || x - bx > radius + 1 ||
+        by - y > radius + 1 || y - by > radius + 1) return false;
+    dot_alive[r][c] = 0;
+    dots_left--;
+    draw_dot(c, r, COL_BG);
+    return true;
+}
+
+int maze_dots_left(void)  { return dots_left;  }
+int maze_dots_total(void) { return dots_total; }
+
+/* Repaint the surviving dots that fall inside a rectangle (after an overlay
+ * like the countdown digit erased them). */
+void maze_dots_redraw_region(int x0, int y0, int x1, int y1)
+{
+    int r, c;
+    for (r = 0; r < g_rows; r++)
+        for (c = 0; c < g_cols; c++)
+            if (dot_alive[r][c]) {
+                int x, y;
+                cell_center(c, r, &x, &y);
+                if (x >= x0 - 1 && x <= x1 + 1 && y >= y0 - 1 && y <= y1 + 1)
+                    draw_dot(c, r, COL_DOT);
+            }
+}
+
 /* One backtracker run can end up with a very short start->finish route, so
  * carve up to MAZE_TRIES seed variants and keep the longest route that still
  * has at least MIN_DEAD_ENDS dead ends, stopping early once the route covers
@@ -230,6 +313,7 @@ void maze_generate(uint32_t seed, int cols, int rows)
 
     gen_walls(best_seed);             /* rebuild the winner (cheap) */
     rasterize_walls();
+    place_dots();
 }
 
 /* ---- Rendering --------------------------------------------------------- */
@@ -238,7 +322,9 @@ void maze_draw_markers(void)
     int sx, sy, fx, fy;
     maze_start_pixel(&sx, &sy);
     maze_finish_pixel(&fx, &fy);
-    oledC_DrawCircle((uint8_t)sx, (uint8_t)sy, 2, COL_START);
+    /* small square so it can't be mistaken for the (round) ball */
+    oledC_DrawRectangle((uint8_t)(sx - 1), (uint8_t)(sy - 1),
+                        (uint8_t)(sx + 1), (uint8_t)(sy + 1), COL_START);
     oledC_DrawRectangle((uint8_t)(fx - 3), (uint8_t)(fy - 3),
                         (uint8_t)(fx + 3), (uint8_t)(fy + 3), COL_FINISH);
 }

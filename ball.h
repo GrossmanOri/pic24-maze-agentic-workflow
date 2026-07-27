@@ -22,6 +22,9 @@ void ball_update(int tx, int ty, uint8_t speed_pct);
  * (only repaints if it actually moved). */
 void ball_render(void);
 
+/* Draw the ball sprite (filled circle + glint) at an arbitrary position. */
+void ball_draw_at(int x, int y);
+
 /* Current ball center. */
 int ball_x(void);
 int ball_y(void);

@@ -75,6 +75,13 @@ void ball_update(int tx, int ty, uint8_t speed_pct)
     if (sy) move_y(sy);
 }
 
+/* The ball with a little glint pixel so it reads as a sphere, not a blob. */
+void ball_draw_at(int x, int y)
+{
+    oledC_DrawCircle((uint8_t)x, (uint8_t)y, BALL_RADIUS, COL_BALL);
+    oledC_DrawPoint((uint8_t)(x - 1), (uint8_t)(y - 1), COL_TEXT);
+}
+
 void ball_render(void)
 {
     if (cx == prev_x && cy == prev_y)
@@ -83,10 +90,11 @@ void ball_render(void)
     /* Erase the ball at its old position by repainting it in the background
      * color, then draw it at the new one. */
     oledC_DrawCircle((uint8_t)prev_x, (uint8_t)prev_y, BALL_RADIUS, COL_BG);
-    /* Restore markers the erase may have clipped. */
+    /* Restore markers and any dot the erase may have clipped. */
     maze_draw_markers();
-    /* Draw ball at new position. */
-    oledC_DrawCircle((uint8_t)cx, (uint8_t)cy, BALL_RADIUS, COL_BALL);
+    maze_dots_redraw_region(prev_x - BALL_RADIUS - 1, prev_y - BALL_RADIUS - 1,
+                            prev_x + BALL_RADIUS + 1, prev_y + BALL_RADIUS + 1);
+    ball_draw_at(cx, cy);
 
     prev_x = cx;
     prev_y = cy;

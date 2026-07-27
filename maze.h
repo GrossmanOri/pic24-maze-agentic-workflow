@@ -38,4 +38,11 @@ void maze_start_pixel(int *x, int *y);
 /* True if (cx,cy) lies inside the finish cell. */
 bool maze_at_finish(int cx, int cy);
 
+/* Collectible dots: one per eligible cell, placed by maze_generate(). */
+void maze_dots_render(void);
+bool maze_dot_collect(int bx, int by, int radius);   /* true = ate a dot */
+int  maze_dots_left(void);
+int  maze_dots_total(void);
+void maze_dots_redraw_region(int x0, int y0, int x1, int y1);
+
 #endif /* MAZE_H */
