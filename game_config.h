@@ -92,6 +92,11 @@
 /* ---- Countdown --------------------------------------------------------- */
 #define COUNTDOWN_STEP_MS   650     /* per digit of the 3-2-1 countdown      */
 
+/* ---- Input feel --------------------------------------------------------- */
+#define POT_HYST            8       /* ADC counts into a band before the pot
+                                     * index switches (kills letter flicker) */
+#define SAVE_HOLD_MS        400     /* hold S1+S2 this long to save the name */
+
 /* ---- Colors (RGB565) --------------------------------------------------- */
 #define COL_BG              0x0000  /* screen background                     */
 #define COL_WALL            0xFFFF  /* maze walls                            */

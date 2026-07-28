@@ -394,9 +394,12 @@ static void maze_finish_pixel(int *x, int *y)
     *y = (yline(cr0()) + yline(cr1() + 1)) / 2;
 }
 
-bool maze_at_finish(int cx, int cy)
+/* Win = the ball overlaps the 7x7 green door drawn in the finish room. */
+bool maze_at_finish(int cx, int cy, int radius)
 {
-    return cx >= xline(cc0()) && cx <= xline(cc1() + 1) &&
-           cy >= yline(cr0()) && cy <= yline(cr1() + 1);
+    int fx, fy;
+    maze_finish_pixel(&fx, &fy);
+    return cx - fx <= 3 + radius && fx - cx <= 3 + radius &&
+           cy - fy <= 3 + radius && fy - cy <= 3 + radius;
 }
 

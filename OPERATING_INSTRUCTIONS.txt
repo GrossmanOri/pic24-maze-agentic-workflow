@@ -6,7 +6,7 @@
 GOAL
 ----
 Tilt the board to roll the red ball from its start at the bottom of the maze
-to FINISH (the green room in the center) before the timer runs out. Finishing
+onto the green door in the center before the timer runs out. Finishing
 faster gives a better (lower) score. Gold coins are scattered along the
 corridors - collect them on the way for bragging rights (the score is still
 the time; the counter top-right and the end screens show how many you got).
@@ -26,6 +26,8 @@ CONTROLS
   * Button S1 ........ select / move name cursor LEFT.
   * Button S2 ........ select / move name cursor RIGHT.
   * S1 + S2 together . save the name (in the name-entry screen).
+  * Short press S1/S2  during a game: pause (press again to resume; the
+                       clock stops while paused).
   * Hold S1 for 2 s .. during a game, returns to the main menu (ends the game).
 
 MAIN MENU (shown at power-up)
@@ -60,7 +62,7 @@ END OF A GAME
         - If your time makes the Big Three, you are asked to enter your name:
               turn the potentiometer to pick each letter (A..Z),
               S1 / S2 move the cursor left / right,
-              press S1 + S2 together to save.
+              hold S1 + S2 together briefly to save.
         - If it does not qualify, just press a key to return to the menu.
 
 TIPS

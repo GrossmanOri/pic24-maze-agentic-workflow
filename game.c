@@ -255,6 +255,35 @@ static PlayResult run_play(uint16_t *score_out)
             return PLAY_ABORT;
         }
 
+        /* A short press on either button pauses; another press resumes.
+         * The clock stops while paused (start_ms is shifted on resume). */
+        if (input_s1_pressed() || input_s2_pressed()) {
+            uint32_t paused_at = now;
+            if (inverted) { inverted = false; display_normal(); }
+            oledC_DrawRectangle(28, 36, 67, 57, COL_BG);
+            draw_centered(38, 1, 2, "PAUSED", COL_TEXT);
+            for (;;) {
+                input_poll(tick_ms());
+                if (input_s1_long_press()) {
+                    display_normal();
+                    return PLAY_ABORT;
+                }
+                if (input_s1_pressed() || input_s2_pressed())
+                    break;
+                DELAY_milliseconds(10);
+            }
+            oledC_DrawRectangle(28, 36, 67, 57, COL_BG);
+            maze_redraw_region(28, 36, 67, 57);
+            maze_dots_redraw_region(28, 36, 67, 57);
+            maze_draw_markers();
+            ball_draw_at(ball_x(), ball_y());
+            draw_coins(maze_dots_total() - maze_dots_left());
+            last_shown = -1;                  /* force a timer repaint */
+            now = tick_ms();
+            start_ms += now - paused_at;      /* don't count paused time */
+            blink_ms += now - paused_at;
+        }
+
         /* Time bookkeeping. */
         {
             uint32_t elapsed_tenths = (now - start_ms) / 100u;
@@ -276,8 +305,8 @@ static PlayResult run_play(uint16_t *score_out)
         /* Keep the ball drawn on top (so the corner timer can't hide it). */
         ball_draw_at(ball_x(), ball_y());
 
-        /* Finish reached? */
-        if (maze_at_finish(ball_x(), ball_y())) {
+        /* Reached the green door? */
+        if (maze_at_finish(ball_x(), ball_y(), ball_radius())) {
             display_normal();
             *score_out = (uint16_t)((now - start_ms) / 100u);
             return PLAY_WIN;
@@ -305,6 +334,8 @@ static void run_name_entry(uint16_t score)
     int cur = 0, maxpos = 0, i;
     int last_cur = -1, last_maxpos = -1;
     char last_letter = 0;
+    bool both_held = false;
+    uint32_t both_since = 0;
 
     for (i = 0; i <= NAME_MAXLEN; i++) name[i] = 0;
     for (i = 0; i < NAME_MAXLEN; i++) name[i] = 'A';
@@ -316,7 +347,8 @@ static void run_name_entry(uint16_t score)
      * line and the cursor, and only when they actually change. */
     ui_clear();
     draw_centered(4, 1, 2, "YOUR NAME", COL_TEXT);
-    draw_centered(82, 1, 1, "S1< S2> S1+S2=ok", COL_DIM);
+    draw_centered(72, 1, 1, "S1< S2> move", COL_DIM);
+    draw_centered(84, 1, 1, "hold both = save", COL_DIM);
 
     for (;;) {
         input_poll(tick_ms());
@@ -324,15 +356,21 @@ static void run_name_entry(uint16_t score)
         /* Current letter chosen by the potentiometer. */
         name[cur] = (char)('A' + input_pot_index(26));
 
-        /* Save when both keys are held together. */
+        /* Save when both keys stay held together for a moment (a brief
+         * touch is treated as a cursor move, not a save). */
         if (input_both_down()) {
-            name[maxpos + 1] = '\0';
-            scoreboard_insert(name, score);
-            /* wait for release, then drop the leftover press edges so the
-             * menu doesn't act on them */
-            while (input_both_down()) { input_poll(tick_ms()); DELAY_milliseconds(10); }
-            (void)input_s1_pressed(); (void)input_s2_pressed();
-            return;
+            if (!both_held) { both_held = true; both_since = tick_ms(); }
+            if (tick_ms() - both_since >= SAVE_HOLD_MS) {
+                name[maxpos + 1] = '\0';
+                scoreboard_insert(name, score);
+                /* wait for release, then drop the leftover press edges so
+                 * the menu doesn't act on them */
+                while (input_both_down()) { input_poll(tick_ms()); DELAY_milliseconds(10); }
+                (void)input_s1_pressed(); (void)input_s2_pressed();
+                return;
+            }
+        } else {
+            both_held = false;
         }
 
         if (input_s1_pressed()) {                 /* move left  */

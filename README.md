@@ -30,7 +30,8 @@ spiDriver / i2cDriver), as required, so it compiles unchanged with XC16.
 | Potentiometer | scroll menu / pick a letter in name entry |
 | S1 | select / move name cursor **left** |
 | S2 | select / move name cursor **right** |
-| S1 + S2 | save name |
+| S1 + S2 (held briefly) | save name |
+| S1 or S2 (in game) | pause / resume (the clock stops) |
 | Hold S1 (2 s) | abort game, back to the main menu |
 
 See `OPERATING_INSTRUCTIONS.txt` for full gameplay.

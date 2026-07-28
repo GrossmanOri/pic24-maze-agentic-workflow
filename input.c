@@ -105,10 +105,25 @@ static uint16_t input_pot_raw(void)
     return (uint16_t)ADC1BUF0;            /* 0..1023             */
 }
 
+/* Maps the pot to 0..num_steps-1 with hysteresis: when the raw value sits
+ * right on a step boundary the ADC noise would flicker between the two
+ * neighbours, so a new step is only accepted once the pot is clearly inside
+ * its band. */
 uint8_t input_pot_index(uint8_t num_steps)
 {
+    static uint8_t last_steps = 0, last_idx = 0;
     uint16_t v = input_pot_raw();         /* 0..1023 */
-    uint16_t idx = (uint16_t)((uint32_t)v * num_steps / 1024u);
+    uint8_t idx = (uint8_t)((uint32_t)v * num_steps / 1024u);
     if (idx >= num_steps) idx = (uint8_t)(num_steps - 1);
-    return (uint8_t)idx;
+
+    if (num_steps != last_steps) {        /* new caller: take it as-is */
+        last_steps = num_steps;
+        last_idx = idx;
+    } else if (idx != last_idx) {
+        uint16_t lo = (uint16_t)((uint32_t)idx * 1024u / num_steps);
+        uint16_t hi = (uint16_t)((uint32_t)(idx + 1) * 1024u / num_steps);
+        if (v >= lo + POT_HYST && v + POT_HYST < hi)
+            last_idx = idx;
+    }
+    return last_idx;
 }

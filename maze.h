@@ -35,8 +35,9 @@ bool maze_ball_collides(int cx, int cy, int r);
 /* Center pixel of the start cell (where the ball begins). */
 void maze_start_pixel(int *x, int *y);
 
-/* True if (cx,cy) lies inside the finish cell. */
-bool maze_at_finish(int cx, int cy);
+/* True if a ball of the given radius centered at (cx,cy) touches the green
+ * door drawn in the finish room. */
+bool maze_at_finish(int cx, int cy, int radius);
 
 /* Collectible dots: one per eligible cell, placed by maze_generate(). */
 void maze_dots_render(void);
