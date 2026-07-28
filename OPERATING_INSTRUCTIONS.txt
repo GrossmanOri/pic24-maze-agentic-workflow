@@ -41,6 +41,7 @@ choose it:
                  Level 3 : 20.0 s, fast ball  (speed factor 1.2)
   START    - begin a game at the chosen difficulty.
   SCORES   - show the "Big Three" best times (kept until power-off).
+  HELP     - a quick reminder of the controls, on the screen itself.
 
 PLAYING
 -------

@@ -81,7 +81,7 @@ static void wait_any_key(void)
 }
 
 /* ===================== Menu ============================================= */
-typedef enum { ACT_START, ACT_SCORES } MenuAction;
+typedef enum { ACT_START, ACT_SCORES, ACT_HELP } MenuAction;
 
 /* Repaint one menu row. Only the touched rows are redrawn when the
  * selection moves, so scrolling the pot doesn't blink the whole screen. */
@@ -89,13 +89,13 @@ static void menu_item(uint8_t idx, bool sel)
 {
     char buf[12];
     const char *txt;
-    uint8_t y = (uint8_t)(34 + idx * 20);
+    uint8_t y = (uint8_t)(24 + idx * 18);
 
     if (idx == 0) {
         sprintf(buf, "LEVEL %u", difficulty);
         txt = buf;
     } else {
-        txt = (idx == 1) ? "START" : "SCORES";
+        txt = (idx == 1) ? "START" : (idx == 2) ? "SCORES" : "HELP";
     }
 
     /* glyphs at scale 2 reach y+17, so the wipe band does too */
@@ -109,8 +109,8 @@ static void menu_draw(uint8_t sel)
 {
     uint8_t i;
     ui_clear();
-    draw_centered(2, 2, 2, "MAZE", COL_TEXT);
-    for (i = 0; i < 3; i++)
+    draw_centered(0, 2, 2, "MAZE", COL_TEXT);
+    for (i = 0; i < 4; i++)
         menu_item(i, i == sel);
 }
 
@@ -120,7 +120,7 @@ static MenuAction run_menu(void)
     menu_draw(0);
     for (;;) {
         input_poll(tick_ms());
-        sel = input_pot_index(3);
+        sel = input_pot_index(4);
         if (sel != last) {                        /* repaint only two rows */
             menu_item(last, false);
             menu_item(sel, true);
@@ -134,8 +134,10 @@ static MenuAction run_menu(void)
                 DELAY_milliseconds(150);   /* so one press can't cycle twice */
             } else if (sel == 1) {
                 return ACT_START;
-            } else {
+            } else if (sel == 2) {
                 return ACT_SCORES;
+            } else {
+                return ACT_HELP;
             }
         }
         DELAY_milliseconds(10);
@@ -161,6 +163,21 @@ static void run_highscores(void)
         oledC_DrawString(2, (uint8_t)(28 + i * 18), 1, 2, (uint8_t *)buf, COL_TEXT);
     }
     draw_centered(86, 1, 1, "press a key", COL_DIM);
+    wait_any_key();
+}
+
+/* ===================== Help screen ===================================== */
+static void run_help(void)
+{
+    ui_clear();
+    draw_centered(2, 1, 2, "HOW TO PLAY", COL_TEXT);
+    oledC_DrawRectangle(15, 19, 80, 19, COL_DIM);
+    oledC_DrawString(2, 24, 1, 1, (uint8_t *)"tilt = roll ball", COL_TEXT);
+    oledC_DrawString(2, 34, 1, 1, (uint8_t *)"reach green door", COL_TEXT);
+    oledC_DrawString(2, 44, 1, 1, (uint8_t *)"grab gold coins", COL_TEXT);
+    oledC_DrawString(2, 56, 1, 1, (uint8_t *)"S1/S2 = pause", COL_HILITE);
+    oledC_DrawString(2, 66, 1, 1, (uint8_t *)"hold S1 = menu", COL_HILITE);
+    draw_centered(84, 1, 1, "press a key", COL_DIM);
     wait_any_key();
 }
 
@@ -494,6 +511,8 @@ void game_run(void)
         MenuAction a = run_menu();
         if (a == ACT_SCORES) {
             run_highscores();
+        } else if (a == ACT_HELP) {
+            run_help();
         } else {                    /* ACT_START */
             uint16_t score = 0;
             PlayResult r;
