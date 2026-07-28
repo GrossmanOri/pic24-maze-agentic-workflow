@@ -62,7 +62,8 @@ END OF A GAME
         - If your time makes the Big Three, you are asked to enter your name:
               turn the potentiometer to pick each letter (A..Z),
               S1 / S2 move the cursor left / right,
-              hold S1 + S2 together briefly to save.
+              hold S1 + S2 together briefly to save,
+              or hold S1 alone to skip without saving.
         - If it does not qualify, just press a key to return to the menu.
 
 TIPS

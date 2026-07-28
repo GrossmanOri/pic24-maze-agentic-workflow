@@ -17,8 +17,9 @@ void input_init(void);
 /* Sample buttons and update edge/long-press state. now_ms = running ms time. */
 void input_poll(uint32_t now_ms);
 
-/* True while S1 and S2 are held together (debounced levels). */
-bool input_both_down(void);
+/* Debounced level states. */
+bool input_s1_down(void);
+bool input_both_down(void);          /* S1 AND S2 held together */
 
 /* One-shot press edges (true once per press; cleared on read). */
 bool input_s1_pressed(void);

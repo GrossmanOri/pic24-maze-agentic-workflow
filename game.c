@@ -342,16 +342,25 @@ static void run_name_entry(uint16_t score)
 
     input_poll(tick_ms());
     (void)input_s1_pressed(); (void)input_s2_pressed();
+    (void)input_s1_long_press();
 
     /* Static parts are drawn once; the loop below repaints only the name
      * line and the cursor, and only when they actually change. */
     ui_clear();
     draw_centered(4, 1, 2, "YOUR NAME", COL_TEXT);
+    draw_centered(62, 1, 1, "hold S1 = skip", COL_DIM);
     draw_centered(72, 1, 1, "S1< S2> move", COL_DIM);
     draw_centered(84, 1, 1, "hold both = save", COL_DIM);
 
     for (;;) {
         input_poll(tick_ms());
+
+        /* Holding S1 alone skips the scoreboard entry entirely. */
+        if (!input_both_down() && input_s1_long_press()) {
+            while (input_s1_down()) { input_poll(tick_ms()); DELAY_milliseconds(10); }
+            (void)input_s1_pressed(); (void)input_s2_pressed();
+            return;
+        }
 
         /* Current letter chosen by the potentiometer. */
         name[cur] = (char)('A' + input_pot_index(26));
