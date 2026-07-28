@@ -1,7 +1,7 @@
 /*******************************************************************************
  * maze.h - Maze model, rendering and collision for the Maze game.
  *
- * The maze is a grid of cells (8x8, 10x10 or 12x12 depending on difficulty)
+ * The maze is a grid of cells (6x6, 8x8 or 10x10 depending on difficulty)
  * on the 96x96 OLED. Walls live on cell edges and are stored two ways:
  *   - logical wall arrays (vwall/hwall)           -> generation + solvability
  *   - a 96x96 1-bit occupancy bitmap (rasterized) -> fast pixel collision
@@ -17,10 +17,10 @@
  * cols x rows grid (clamped to MAZE_COLS/MAZE_ROWS). Bigger grid = harder. */
 void maze_generate(uint32_t seed, int cols, int rows);
 
-/* Draw the whole maze (walls + start/finish markers) to the OLED. */
+/* Draw the whole maze (walls + the finish door) to the OLED. */
 void maze_render(void);
 
-/* Redraw just the start and finish markers (call after erasing the ball). */
+/* Redraw just the finish door (call after erasing the ball). */
 void maze_draw_markers(void);
 
 /* Repaint wall pixels inside a rectangle (after a UI overlay erased them). */

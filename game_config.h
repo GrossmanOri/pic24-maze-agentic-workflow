@@ -87,7 +87,7 @@
  * brief defines. */
 #define DOT_KEEPOUT_X       34      /* no dots under the timer pad...        */
 #define DOT_KEEPOUT_Y       20      /* ...(cell centers left of/above this)  */
-#define COIN_KEEPOUT_X      78      /* ...nor under the coin counter (right) */
+#define COIN_KEEPOUT_X      74      /* ...nor under the coin counter (right) */
 
 /* ---- Countdown --------------------------------------------------------- */
 #define COUNTDOWN_STEP_MS   650     /* per digit of the 3-2-1 countdown      */

@@ -6,7 +6,8 @@
  * (System / oledDriver / spiDriver / i2cDriver).
  *
  *   SYSTEM_Initialize()  - clock, pins, OLED (SPI1) from the template
- *   game_init()          - input (pot + S1/S2), Timer1 tick, accelerometer
+ *   game_init()          - input (pot + S1/S2) and the Timer1 tick; the
+ *                          accelerometer is brought up on the first START
  *   game_run()           - menu / gameplay / scoring state machine (loops)
  ******************************************************************************/
 #include "System/system.h"

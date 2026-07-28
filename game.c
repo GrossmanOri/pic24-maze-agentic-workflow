@@ -220,7 +220,7 @@ static void run_countdown(void)
         sprintf(d, "%d", i);
         draw_centered(34, 4, 4, d, COL_HILITE);
         DELAY_milliseconds(COUNTDOWN_STEP_MS);
-        /* the scale-4 glyph really covers x36..59, y38..69 */
+        /* the scale-4 glyph covers x38..57, y38..69 */
         oledC_DrawRectangle(34, 36, 61, 71, COL_BG);
         maze_redraw_region(34, 36, 61, 71);
         maze_dots_redraw_region(34, 36, 61, 71);
@@ -274,7 +274,9 @@ static PlayResult run_play(uint16_t *score_out)
 
         /* A short press on either button pauses; another press resumes.
          * The clock stops while paused (start_ms is shifted on resume). */
-        if (input_s1_pressed() || input_s2_pressed()) {
+        {
+            bool p1 = input_s1_pressed(), p2 = input_s2_pressed();
+            if (p1 || p2) {
             uint32_t paused_at = now;
             if (inverted) { inverted = false; display_normal(); }
             oledC_DrawRectangle(28, 36, 67, 57, COL_BG);
@@ -299,6 +301,7 @@ static PlayResult run_play(uint16_t *score_out)
             now = tick_ms();
             start_ms += now - paused_at;      /* don't count paused time */
             blink_ms += now - paused_at;
+            }
         }
 
         /* Time bookkeeping. */
@@ -399,15 +402,17 @@ static void run_name_entry(uint16_t score)
             both_held = false;
         }
 
-        if (input_s1_pressed()) {                 /* move left  */
-            if (cur > 0) cur--;
-        }
-        if (input_s2_pressed()) {                 /* move right */
-            if (cur < NAME_MAXLEN - 1) { cur++; if (cur > maxpos) maxpos = cur; }
+        if (!input_both_down()) {
+            if (input_s1_pressed()) {             /* move left  */
+                if (cur > 0) cur--;
+            }
+            if (input_s2_pressed()) {             /* move right */
+                if (cur < NAME_MAXLEN - 1) { cur++; if (cur > maxpos) maxpos = cur; }
+            }
         }
 
-        /* Repaint only when the visible state changed. Text scale is 1 so
-         * all NAME_MAXLEN characters fit on the 96px panel (6 px each). */
+        /* Repaint only when the visible state changed. Horizontal scale is
+         * 1 so all NAME_MAXLEN characters (6 px each) fit on the panel. */
         if (name[cur] != last_letter || cur != last_cur || maxpos != last_maxpos) {
             char disp[NAME_MAXLEN + 2];
             int w  = (maxpos + 1) * 6 - 1;

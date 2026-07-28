@@ -123,7 +123,9 @@ uint8_t input_pot_index(uint8_t num_steps)
     } else if (idx != last_idx) {
         uint16_t lo = (uint16_t)((uint32_t)idx * 1024u / num_steps);
         uint16_t hi = (uint16_t)((uint32_t)(idx + 1) * 1024u / num_steps);
-        if (v >= lo + POT_HYST && v + POT_HYST < hi)
+        /* the ends of the travel have only one boundary to guard */
+        if ((idx == 0 || v >= lo + POT_HYST) &&
+            (idx == num_steps - 1 || v + POT_HYST < hi))
             last_idx = idx;
     }
     return last_idx;

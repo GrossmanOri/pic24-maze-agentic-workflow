@@ -21,7 +21,7 @@ spiDriver / i2cDriver), as required, so it compiles unchanged with XC16.
 * Open `Maze.X` in MPLAB X (device PIC24FJ256GA705, tool *Starter Kits (PKOB)*,
   compiler XC16 v2.10), then **Clean and Build** and **Make and Program Device**.
 * Hardware: **OLED C Click** in socket A, **Accel Click** in socket B.
-* Builds `-Wall` clean with XC16 v2.10 (about 22 KB program, 2.6 KB RAM).
+* Builds `-Wall` clean with XC16 v2.10 (about 26 KB program, 2.8 KB RAM).
 
 ## Controls
 
@@ -40,8 +40,7 @@ See `OPERATING_INSTRUCTIONS.txt` for full gameplay.
 
 ## Screens
 
-Simulated frames, rendered pixel-exact from the game's own drawing code and
-font:
+Screenshots (simulated frames of each screen):
 
 | Menu | Countdown | Gameplay |
 |---|---|---|
@@ -111,15 +110,15 @@ detection.
 
 ## Maze generation
 
-<img src="docs/sim_maze.png" width="288" align="right" alt="A level-2 maze rendered from the generator: white walls, ball at the bottom start, red finish room in the center">
+<img src="docs/sim_maze.png" width="288" align="right" alt="A level-2 maze rendered from the generator: white walls, red ball at the bottom start, green finish door in the center">
 
 Each game carves a fresh maze with an iterative recursive-backtracker over a
-logical grid (8x8, 10x10 or 12x12 cells depending on difficulty; the seed
+logical grid (6x6, 8x8 or 10x10 cells depending on difficulty; the seed
 changes every game). Because a single backtracker run can produce a short
 solution route, generation tries several seed variants and keeps the maze with
 the longest START-to-FINISH route that still has at least 5 dead ends, per the
 project brief. The ball starts at the bottom-center cell; FINISH is a 2x2
-room in the center, filled green.
+room in the center, marked by a green door.
 
 ## Tuning
 
