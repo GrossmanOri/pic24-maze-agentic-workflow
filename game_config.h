@@ -40,7 +40,7 @@
  * dense level-3 maze needs the small one to fit its corridors). */
 #define BALL_R_BIG          3
 #define BALL_R_SMALL        2
-#define BALL_MAX_STEP       4       /* max pixels moved per axis per frame   */
+#define BALL_MAX_STEP       5       /* max pixels moved per axis per frame   */
 
 /* ---- Tilt / physics ----------------------------------------------------
  * The ADXL345 reads ~256 counts per g; a flat board reads ~0 on X and Y.
@@ -50,7 +50,7 @@
  *   velocity[1/16 px per frame] = tilt_counts * speed_pct / TILT_VEL_DEN
  *
  * With TILT_VEL_DEN = 300 a full sideways g (256) at 100% gives about
- * 5 px/frame (before the dead-zone), and BALL_MAX_STEP clamps it to 4.
+ * 5 px/frame (before the dead-zone), just inside the BALL_MAX_STEP clamp.
  *
  * ACCEL_*_SIGN map the chip axes to screen axes (screen +x = right, +y =
  * down), matching how the Accel Click is mounted on this board. */

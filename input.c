@@ -88,6 +88,7 @@ void input_poll(uint32_t now_ms)
 }
 
 bool input_s1_down(void)   { return s1.stable; }
+bool input_s2_down(void)   { return s2.stable; }
 bool input_both_down(void) { return s1.stable && s2.stable; }
 
 bool input_s1_pressed(void) { bool e = s1.edge; s1.edge = false; return e; }

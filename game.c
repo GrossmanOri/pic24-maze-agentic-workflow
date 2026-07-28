@@ -67,7 +67,8 @@ static void draw_centered(uint8_t y, uint8_t sx, uint8_t sy,
     oledC_DrawString((uint8_t)x, y, sx, sy, (uint8_t *)s, color);
 }
 
-/* Wait until either button is pressed. */
+/* Wait until either button is pressed AND released, so a button still held
+ * down can't act on (or long-press into) whatever screen comes next. */
 static void wait_any_key(void)
 {
     /* swallow stale edges */
@@ -75,9 +76,14 @@ static void wait_any_key(void)
     (void)input_s1_pressed(); (void)input_s2_pressed();
     for (;;) {
         input_poll(tick_ms());
-        if (input_s1_pressed() || input_s2_pressed()) return;
+        if (input_s1_pressed() || input_s2_pressed()) break;
         DELAY_milliseconds(10);
     }
+    while (input_s1_down() || input_s2_down()) {
+        input_poll(tick_ms());
+        DELAY_milliseconds(10);
+    }
+    (void)input_s1_pressed(); (void)input_s2_pressed(); (void)input_s1_long_press();
 }
 
 /* ===================== Menu ============================================= */
@@ -118,6 +124,8 @@ static MenuAction run_menu(void)
 {
     uint8_t sel = 0, last = 0;
     menu_draw(0);
+    input_poll(tick_ms());
+    (void)input_s1_pressed(); (void)input_s2_pressed();
     for (;;) {
         input_poll(tick_ms());
         sel = input_pot_index(4);
@@ -236,6 +244,7 @@ static PlayResult run_play(uint16_t *score_out)
     uint16_t remaining;
     int16_t  last_shown = -1;
     bool inverted = false;
+    bool s1_tap = false;
 
     /* Build and draw the maze. Grid size grows with difficulty (denser/harder),
      * and the seed varies per difficulty and per replay (different every game). */
@@ -272,12 +281,16 @@ static PlayResult run_play(uint16_t *score_out)
             return PLAY_ABORT;
         }
 
-        /* A short press on either button pauses; another press resumes.
+        /* S2 pauses right away; a tap on S1 pauses when it is released, so
+         * holding S1 for the 2s abort doesn't flash the pause screen first.
          * The clock stops while paused (start_ms is shifted on resume). */
+        if (input_s1_pressed()) s1_tap = true;
         {
-            bool p1 = input_s1_pressed(), p2 = input_s2_pressed();
+            bool p2 = input_s2_pressed();
+            bool p1 = s1_tap && !input_s1_down();
             if (p1 || p2) {
             uint32_t paused_at = now;
+            s1_tap = false;
             if (inverted) { inverted = false; display_normal(); }
             oledC_DrawRectangle(28, 36, 67, 57, COL_BG);
             draw_centered(38, 1, 2, "PAUSED", COL_TEXT);
@@ -287,10 +300,12 @@ static PlayResult run_play(uint16_t *score_out)
                     display_normal();
                     return PLAY_ABORT;
                 }
-                if (input_s1_pressed() || input_s2_pressed())
-                    break;
+                if (input_s1_pressed()) s1_tap = true;
+                if (input_s2_pressed()) break;
+                if (s1_tap && !input_s1_down()) break;
                 DELAY_milliseconds(10);
             }
+            s1_tap = false;
             oledC_DrawRectangle(28, 36, 67, 57, COL_BG);
             maze_redraw_region(28, 36, 67, 57);
             maze_dots_redraw_region(28, 36, 67, 57);

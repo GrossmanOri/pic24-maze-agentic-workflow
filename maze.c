@@ -293,7 +293,10 @@ void maze_generate(uint32_t seed, int cols, int rows)
     g_cellx = SCREEN_W / g_cols;
     g_celly = SCREEN_H / g_rows;
 
-    for (t = 0; t < MAZE_TRIES; t++) {
+    {
+    /* a 6x6 maze has a short start-to-center hop, so it gets more tries */
+    int tries = (g_cols <= 6) ? 2 * MAZE_TRIES : MAZE_TRIES;
+    for (t = 0; t < tries; t++) {
         uint32_t s = seed + (uint32_t)t * 9973u;   /* spread the try seeds */
         int len, ends, target = (g_cols * g_rows) / 2;
 
@@ -306,6 +309,7 @@ void maze_generate(uint32_t seed, int cols, int rows)
         if (len > best_len) { best_len = len; best_seed = s; }
         if (len >= target)
             break;                    /* long, winding route - good enough */
+    }
     }
 
     /* If no try had enough dead ends (does not really happen on these grid

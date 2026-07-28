@@ -19,6 +19,7 @@ void input_poll(uint32_t now_ms);
 
 /* Debounced level states. */
 bool input_s1_down(void);
+bool input_s2_down(void);
 bool input_both_down(void);          /* S1 AND S2 held together */
 
 /* One-shot press edges (true once per press; cleared on read). */
