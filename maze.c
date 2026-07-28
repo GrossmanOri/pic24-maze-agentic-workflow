@@ -217,7 +217,8 @@ static void place_dots(void)
                          r >= cr0() && r <= cr1());
             if (in_finish) continue;                           /* finish  */
             cell_center(c, r, &x, &y);
-            if (x < DOT_KEEPOUT_X && y < DOT_KEEPOUT_Y) continue; /* timer */
+            if (y < DOT_KEEPOUT_Y &&
+                (x < DOT_KEEPOUT_X || x > COIN_KEEPOUT_X)) continue; /* HUD */
             dot_alive[r][c] = 1;
             dots_left++; dots_total++;
         }
@@ -319,12 +320,8 @@ void maze_generate(uint32_t seed, int cols, int rows)
 /* ---- Rendering --------------------------------------------------------- */
 void maze_draw_markers(void)
 {
-    int sx, sy, fx, fy;
-    maze_start_pixel(&sx, &sy);
+    int fx, fy;
     maze_finish_pixel(&fx, &fy);
-    /* small square so it can't be mistaken for the (round) ball */
-    oledC_DrawRectangle((uint8_t)(sx - 1), (uint8_t)(sy - 1),
-                        (uint8_t)(sx + 1), (uint8_t)(sy + 1), COL_START);
     oledC_DrawRectangle((uint8_t)(fx - 3), (uint8_t)(fy - 3),
                         (uint8_t)(fx + 3), (uint8_t)(fy + 3), COL_FINISH);
 }

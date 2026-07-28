@@ -10,6 +10,7 @@
 static int cx, cy;          /* current center  */
 static int prev_x, prev_y;  /* last drawn center */
 static int subx, suby;      /* 1/SUBPIXEL fractional accumulators */
+static int g_r = BALL_R_SMALL;  /* radius, set per difficulty in ball_reset */
 
 static int deadzone(int v)
 {
@@ -23,12 +24,15 @@ static int clampi(int v, int lo, int hi)
     return v < lo ? lo : (v > hi ? hi : v);
 }
 
-void ball_reset(int x, int y)
+void ball_reset(int x, int y, int radius)
 {
     cx = prev_x = x;
     cy = prev_y = y;
     subx = suby = 0;
+    g_r = radius;
 }
+
+int ball_radius(void) { return g_r; }
 
 /* Step up to |n| pixels along x (dir = +/-1), stopping at a wall. */
 static void move_x(int n)
@@ -36,7 +40,7 @@ static void move_x(int n)
     int dir = (n > 0) ? 1 : -1;
     int steps = (n > 0) ? n : -n;
     while (steps-- > 0) {
-        if (maze_ball_collides(cx + dir, cy, BALL_RADIUS)) { subx = 0; break; }
+        if (maze_ball_collides(cx + dir, cy, g_r)) { subx = 0; break; }
         cx += dir;
     }
 }
@@ -46,7 +50,7 @@ static void move_y(int n)
     int dir = (n > 0) ? 1 : -1;
     int steps = (n > 0) ? n : -n;
     while (steps-- > 0) {
-        if (maze_ball_collides(cx, cy + dir, BALL_RADIUS)) { suby = 0; break; }
+        if (maze_ball_collides(cx, cy + dir, g_r)) { suby = 0; break; }
         cy += dir;
     }
 }
@@ -78,7 +82,7 @@ void ball_update(int tx, int ty, uint8_t speed_pct)
 /* The ball with a little glint pixel so it reads as a sphere, not a blob. */
 void ball_draw_at(int x, int y)
 {
-    oledC_DrawCircle((uint8_t)x, (uint8_t)y, BALL_RADIUS, COL_BALL);
+    oledC_DrawCircle((uint8_t)x, (uint8_t)y, (uint8_t)g_r, COL_BALL);
     oledC_DrawPoint((uint8_t)(x - 1), (uint8_t)(y - 1), COL_TEXT);
 }
 
@@ -89,11 +93,11 @@ void ball_render(void)
 
     /* Erase the ball at its old position by repainting it in the background
      * color, then draw it at the new one. */
-    oledC_DrawCircle((uint8_t)prev_x, (uint8_t)prev_y, BALL_RADIUS, COL_BG);
+    oledC_DrawCircle((uint8_t)prev_x, (uint8_t)prev_y, (uint8_t)g_r, COL_BG);
     /* Restore markers and any dot the erase may have clipped. */
     maze_draw_markers();
-    maze_dots_redraw_region(prev_x - BALL_RADIUS - 1, prev_y - BALL_RADIUS - 1,
-                            prev_x + BALL_RADIUS + 1, prev_y + BALL_RADIUS + 1);
+    maze_dots_redraw_region(prev_x - g_r - 1, prev_y - g_r - 1,
+                            prev_x + g_r + 1, prev_y + g_r + 1);
     ball_draw_at(cx, cy);
 
     prev_x = cx;

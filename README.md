@@ -3,9 +3,9 @@
 A ball-in-maze game for the **PIC24FJ256GA705 Curiosity** board. Tilt the board
 to roll a ball (read with the **ADXL345** accelerometer) from START to FINISH of
 a 96x96 maze on the **OLED**, within a time limit set by the chosen difficulty.
-Dots are scattered through the corridors to collect on the way, a 3-2-1
-countdown opens every round, and beating the best time earns a NEW RECORD
-screen.
+Gold coins are scattered through the corridors to collect on the way (with a
+live counter), a 3-2-1 countdown opens every round, and beating the best time
+earns a NEW RECORD screen.
 
 Built on the course **accelerometer-lab template** (System / oledDriver /
 spiDriver / i2cDriver), as required, so it compiles unchanged with XC16.
@@ -103,9 +103,10 @@ font:
   `run_name_entry()`, `scoreboard.c`.
 
 Beyond the brief: fresh maze every game (the brief suggests one fixed maze),
-per-difficulty maze density, collectible corridor dots (score stays the game
-time, as specified - the win screen just reports the dot count), a 3-2-1
-countdown, a win animation, and NEW RECORD detection.
+per-difficulty maze density and ball size, collectible corridor coins with a
+live counter (score stays the game time, as specified - the end screens just
+report the coin count), a 3-2-1 countdown, a win animation, and NEW RECORD
+detection.
 
 ## Maze generation
 
@@ -116,8 +117,8 @@ logical grid (8x8, 10x10 or 12x12 cells depending on difficulty; the seed
 changes every game). Because a single backtracker run can produce a short
 solution route, generation tries several seed variants and keeps the maze with
 the longest START-to-FINISH route that still has at least 5 dead ends, per the
-project brief. START is the bottom-center cell (green marker); FINISH is a
-2x2 room in the center.
+project brief. The ball starts at the bottom-center cell; FINISH is a 2x2
+room in the center, filled green.
 
 ## Tuning
 

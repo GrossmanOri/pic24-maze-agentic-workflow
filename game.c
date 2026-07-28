@@ -26,15 +26,15 @@
 /* Maze seed varies with difficulty and replay count, so every game is a
  * different (still fair, solvable) maze - and each difficulty looks distinct. */
 #define MAZE_SEED_BASE  0x00C0FFEEu
-#define FRAME_MS        30          /* per-frame delay, plus draw time */
+#define FRAME_MS        20          /* per-frame delay, plus draw time */
 
 static uint32_t g_play_count = 0;
 
 /* Difficulty table, indexed by (level-1). */
 static const Difficulty DIFFS[3] = {
-    { TIME_TENTHS_LVL1, SPEED_PCT_LVL1 },
-    { TIME_TENTHS_LVL2, SPEED_PCT_LVL2 },
-    { TIME_TENTHS_LVL3, SPEED_PCT_LVL3 },
+    { TIME_TENTHS_LVL1, SPEED_PCT_LVL1, BALL_R_BIG   },
+    { TIME_TENTHS_LVL2, SPEED_PCT_LVL2, BALL_R_BIG   },
+    { TIME_TENTHS_LVL3, SPEED_PCT_LVL3, BALL_R_SMALL },
 };
 
 static uint8_t difficulty = 1;      /* 1..3 */
@@ -87,21 +87,19 @@ typedef enum { ACT_START, ACT_SCORES } MenuAction;
  * selection moves, so scrolling the pot doesn't blink the whole screen. */
 static void menu_item(uint8_t idx, bool sel)
 {
-    char buf[20];
+    char buf[12];
     const char *txt;
     uint8_t y = (uint8_t)(34 + idx * 20);
 
     if (idx == 0) {
-        const Difficulty *d = &DIFFS[difficulty - 1];
-        sprintf(buf, "DIFF %u %2us x%u.%u", difficulty,
-                d->time_tenths / 10, d->speed_pct / 100,
-                (d->speed_pct % 100) / 10);
+        sprintf(buf, "LEVEL %u", difficulty);
         txt = buf;
     } else {
         txt = (idx == 1) ? "START" : "SCORES";
     }
 
-    oledC_DrawRectangle(0, y, SCREEN_W - 1, (uint8_t)(y + 15), COL_BG);
+    /* glyphs at scale 2 reach y+17, so the wipe band does too */
+    oledC_DrawRectangle(0, y, SCREEN_W - 1, (uint8_t)(y + 17), COL_BG);
     draw_centered(y, 1, 2, txt, sel ? COL_HILITE : COL_TEXT);
     if (sel)
         oledC_DrawString(2, y, 1, 2, (uint8_t *)">", COL_HILITE);
@@ -166,6 +164,17 @@ static void run_highscores(void)
     wait_any_key();
 }
 
+/* ===================== Coin counter (top-right) ======================== */
+static void draw_coins(int collected)
+{
+    char buf[8];
+    sprintf(buf, "%d", collected);
+    oledC_DrawRectangle(76, 0, 95, 18, COL_BG);
+    maze_redraw_region(76, 0, 95, 18);
+    oledC_DrawRectangle(78, 7, 79, 8, COL_DOT);        /* a little coin */
+    oledC_DrawString(83, 0, 1, 2, (uint8_t *)buf, COL_DOT);
+}
+
 /* ===================== Timer display =================================== */
 static void draw_timer(uint16_t tenths, int16_t *last)
 {
@@ -194,9 +203,10 @@ static void run_countdown(void)
         sprintf(d, "%d", i);
         draw_centered(34, 4, 4, d, COL_HILITE);
         DELAY_milliseconds(COUNTDOWN_STEP_MS);
-        oledC_DrawRectangle(36, 34, 59, 61, COL_BG);
-        maze_redraw_region(36, 34, 59, 61);
-        maze_dots_redraw_region(36, 34, 59, 61);
+        /* the scale-4 glyph really covers x36..59, y38..69 */
+        oledC_DrawRectangle(34, 36, 61, 71, COL_BG);
+        maze_redraw_region(34, 36, 61, 71);
+        maze_dots_redraw_region(34, 36, 61, 71);
         maze_draw_markers();            /* the finish room sits right there */
     }
 }
@@ -223,8 +233,9 @@ static PlayResult run_play(uint16_t *score_out)
     maze_render();
     maze_dots_render();
     maze_start_pixel(&sx, &sy);
-    ball_reset(sx, sy);
+    ball_reset(sx, sy, d->ball_r);
     ball_draw_at(sx, sy);
+    draw_coins(0);
 
     run_countdown();
 
@@ -257,7 +268,8 @@ static PlayResult run_play(uint16_t *score_out)
         /* Physics + render. */
         accel_read_tilt(&tx, &ty);
         ball_update(tx, ty, d->speed_pct);
-        (void)maze_dot_collect(ball_x(), ball_y(), BALL_RADIUS);
+        if (maze_dot_collect(ball_x(), ball_y(), ball_radius()))
+            draw_coins(maze_dots_total() - maze_dots_left());
         ball_render();
         draw_timer(remaining, &last_shown);
 
@@ -374,9 +386,12 @@ static void run_result(PlayResult r, uint16_t score)
 
     if (r == PLAY_LOSE) {
         ui_clear();
-        draw_centered(24, 2, 2, "TIME UP", COL_TEXT);
-        draw_centered(50, 1, 2, "Next time...", COL_TEXT);
-        draw_centered(82, 1, 1, "press a key", COL_DIM);
+        draw_centered(22, 2, 2, "TIME UP", COL_TEXT);
+        draw_centered(48, 1, 2, "Next time...", COL_TEXT);
+        sprintf(buf, "coins %d/%d", maze_dots_total() - maze_dots_left(),
+                maze_dots_total());
+        draw_centered(68, 1, 1, buf, COL_DIM);
+        draw_centered(84, 1, 1, "press a key", COL_DIM);
         wait_any_key();
         return;
     }
@@ -401,7 +416,7 @@ static void run_result(PlayResult r, uint16_t score)
     draw_centered(16, 1, 2, "YOUR SCORE", COL_TEXT);
     sprintf(buf, "%u.%u", score / 10, score % 10);
     draw_centered(38, 2, 2, buf, COL_HILITE);
-    sprintf(buf, "dots %d/%d", maze_dots_total() - maze_dots_left(),
+    sprintf(buf, "coins %d/%d", maze_dots_total() - maze_dots_left(),
             maze_dots_total());
     draw_centered(62, 1, 1, buf, COL_DIM);
     if (record)

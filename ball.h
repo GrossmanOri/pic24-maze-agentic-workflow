@@ -11,8 +11,12 @@
 
 #include <stdint.h>
 
-/* Place the ball at pixel (x,y) and clear its motion state. */
-void ball_reset(int x, int y);
+/* Place the ball at pixel (x,y) with the given radius and clear its motion
+ * state. */
+void ball_reset(int x, int y, int radius);
+
+/* Radius the ball was reset with. */
+int ball_radius(void);
 
 /* Advance one frame: tilt counts tx,ty and the difficulty speed factor (%).
  * Applies dead-zone, fixed-point velocity and per-axis wall collision. */

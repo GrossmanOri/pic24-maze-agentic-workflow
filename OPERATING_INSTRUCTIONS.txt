@@ -5,11 +5,11 @@
 
 GOAL
 ----
-Tilt the board to roll the ball from START (the green square at the bottom of
-the maze) to FINISH (the marked room in the center) before the timer runs
-out. Finishing faster gives a better (lower) score. Dots are scattered along
-the corridors - collect them on the way for bragging rights (the score is
-still the time; the win screen shows how many dots you got).
+Tilt the board to roll the red ball from its start at the bottom of the maze
+to FINISH (the green room in the center) before the timer runs out. Finishing
+faster gives a better (lower) score. Gold coins are scattered along the
+corridors - collect them on the way for bragging rights (the score is still
+the time; the counter top-right and the end screens show how many you got).
 
 HARDWARE SETUP
 --------------
@@ -33,7 +33,7 @@ MAIN MENU (shown at power-up)
 Turn the potentiometer to highlight an option, then press S1 or S2 to
 choose it:
 
-  DIFF n   - press to cycle the difficulty 1 -> 2 -> 3:
+  LEVEL n  - press to cycle the difficulty 1 -> 2 -> 3:
                  Level 1 : 40.0 s, slow ball  (speed factor 0.8)
                  Level 2 : 30.0 s, normal     (speed factor 1.0)
                  Level 3 : 20.0 s, fast ball  (speed factor 1.2)
@@ -55,7 +55,7 @@ END OF A GAME
   * TIME RAN OUT: a "Next time..." screen appears. Press any key to return to
     the menu.
   * YOU REACHED THE FINISH: a "WELL DONE!" screen appears. Press any key to see
-    your score (your time, lower is better), your dot count, and NEW RECORD!
+    your score (your time, lower is better), your coin count, and NEW RECORD!
     if you beat the best time.
         - If your time makes the Big Three, you are asked to enter your name:
               turn the potentiometer to pick each letter (A..Z),
